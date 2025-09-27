@@ -4,11 +4,16 @@ export class WishlistContext {
   constructor() {
     this.ids = new Set();
     this.emitter = new Emitter();
+    this.storageKey = "wishlist";
+    this.handleStorage = this.handleStorage.bind(this);
     this.load();
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", this.handleStorage);
+    }
   }
   load() {
     try {
-      const raw = localStorage.getItem("wishlist");
+      const raw = localStorage.getItem(this.storageKey);
       if (raw) {
         this.ids = new Set(JSON.parse(raw));
       }
@@ -16,7 +21,7 @@ export class WishlistContext {
   }
   persist() {
     try {
-      localStorage.setItem("wishlist", JSON.stringify([...this.ids]));
+      localStorage.setItem(this.storageKey, JSON.stringify([...this.ids]));
     } catch {}
   }
   subscribe(fn) {
@@ -40,6 +45,12 @@ export class WishlistContext {
   clear() {
     this.ids.clear();
     this.persist();
+    this.notify();
+  }
+
+  handleStorage(event) {
+    if (event.key !== this.storageKey) return;
+    this.load();
     this.notify();
   }
 }
