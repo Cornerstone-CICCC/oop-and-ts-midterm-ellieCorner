@@ -8,7 +8,10 @@ export class Router {
     this.resolve();
   }
   parse(hash) {
-    return hash.replace(/^#/, "") || "/";
+    const cleaned = hash.replace(/^#/, "") || "/";
+    const [pathPart, queryString = ""] = cleaned.split("?");
+    const path = pathPart || "/";
+    return { path, query: new URLSearchParams(queryString) };
   }
   match(path) {
     for (const r of this.routes) {
@@ -27,16 +30,22 @@ export class Router {
     window.location.hash = path;
   }
   resolve() {
-    const path = this.parse(window.location.hash);
+    const { path, query } = this.parse(window.location.hash);
     const found = this.match(path);
     if (found) {
       this.current = {
         path,
         params: found.params,
+        query,
         componentFactory: found.route.component,
       };
     } else {
-      this.current = { path, params: {}, componentFactory: () => null };
+      this.current = {
+        path,
+        params: {},
+        query,
+        componentFactory: () => null,
+      };
     }
     if (this.onChange) this.onChange(this.current);
   }
