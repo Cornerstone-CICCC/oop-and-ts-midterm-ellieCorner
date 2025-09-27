@@ -10,7 +10,10 @@ export class Header extends Component {
       cartCount: props.cartContext?.totalItems?.() || 0,
       categories: props.productService?.categories?.() || [],
       activeKey: this.deriveActiveKey(props.router),
+      searchQuery: this.deriveSearchQuery(props.router),
     };
+    this._restoreSearchFocus = false;
+    this._searchSelection = null;
   }
   beforeMount() {
     const { wishlist, cartContext, productService } = this.props;
@@ -64,9 +67,41 @@ export class Header extends Component {
     if (path === "/") return "home";
     return "none";
   }
+  deriveSearchQuery(router) {
+    if (!router?.current) return "";
+    return router.current.query?.get("q") ?? "";
+  }
   updateRouteState() {
     const activeKey = this.deriveActiveKey(this.props.router);
-    this.setState({ activeKey });
+    const searchQuery = this.deriveSearchQuery(this.props.router);
+    const updates = {};
+    if (activeKey !== this.state.activeKey) updates.activeKey = activeKey;
+    if (searchQuery !== this.state.searchQuery)
+      updates.searchQuery = searchQuery;
+    if (Object.keys(updates).length) {
+      this.setState(updates);
+    }
+  }
+  beforeUpdate() {
+    super.beforeUpdate();
+    const activeEl = document.activeElement;
+    if (
+      activeEl &&
+      activeEl.matches?.('input[type="search"][data-model="search-q"]')
+    ) {
+      this._restoreSearchFocus = true;
+      try {
+        this._searchSelection = {
+          start: activeEl.selectionStart,
+          end: activeEl.selectionEnd,
+        };
+      } catch (err) {
+        this._searchSelection = null;
+      }
+    } else {
+      this._restoreSearchFocus = false;
+      this._searchSelection = null;
+    }
   }
   render() {
     const {
@@ -74,6 +109,7 @@ export class Header extends Component {
       cartCount = 0,
       categories = [],
       activeKey = "home",
+      searchQuery = "",
     } = this.state || {};
     const icon = (name, title) => Icon(name, { size: 20, title });
     const escapeHtml = (value = "") =>
@@ -114,7 +150,9 @@ export class Header extends Component {
             <form class="header-search" role="search" data-action="search-form">
               <div class="header-search__field">
                 ${icon("search", "Search")}
-                <input type="search" placeholder="Search" aria-label="Product search" data-model="search-q" />
+                <input type="search" placeholder="Search" aria-label="Product search" data-model="search-q" value="${escapeHtml(
+                  searchQuery
+                )}" />
               </div>
             </form>
             <div class="header-logo"><a href="#/" aria-label="Go to home">FAKE STORE</a></div>
@@ -152,5 +190,36 @@ export class Header extends Component {
   }
   toggleCart() {
     document.body.classList.toggle("show-cart");
+  }
+  afterRender() {
+    super.afterRender();
+    if (this._restoreSearchFocus) {
+      const input = this.__container?.querySelector?.(
+        'input[type="search"][data-model="search-q"]'
+      );
+      if (input) {
+        try {
+          input.focus({ preventScroll: true });
+        } catch (err) {
+          input.focus();
+        }
+        if (
+          this._searchSelection &&
+          typeof this._searchSelection.start === "number" &&
+          typeof this._searchSelection.end === "number"
+        ) {
+          try {
+            input.setSelectionRange(
+              this._searchSelection.start,
+              this._searchSelection.end
+            );
+          } catch (err) {
+            /* ignore */
+          }
+        }
+      }
+    }
+    this._restoreSearchFocus = false;
+    this._searchSelection = null;
   }
 }
