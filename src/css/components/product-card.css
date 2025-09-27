@@ -9,6 +9,15 @@
     border-color var(--transition);
 }
 
+.product-card__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+}
+
 .product-card__media {
   display: block;
   padding: var(--space-5);

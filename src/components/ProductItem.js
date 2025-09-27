@@ -16,21 +16,23 @@ export class ProductItem extends Component {
     const icon = (name, title) => Icon(name, { size: 20, title });
     return `
       <li class="product-grid__item" data-product-id="${product.id}">
-        <a href="#/product/${product.id}" class="product-card">
-          <div class="product-card__media">
-            <img
-              src="${product.image}"
-              alt="${product.title}"
-              loading="lazy"
-              width="200"
-              height="200"
-            />
-          </div>
-          <div class="product-card__body">
-            <h3 class="product-card__title">${product.title}</h3>
-            <p class="product-card__price">$${product.price.toFixed(2)}</p>
-            <p class="product-card__description">${summary}</p>
-          </div>
+        <article class="product-card">
+          <a href="#/product/${product.id}" class="product-card__link">
+            <div class="product-card__media">
+              <img
+                src="${product.image}"
+                alt="${product.title}"
+                loading="lazy"
+                width="200"
+                height="200"
+              />
+            </div>
+            <div class="product-card__body">
+              <h3 class="product-card__title">${product.title}</h3>
+              <p class="product-card__price">$${product.price.toFixed(2)}</p>
+              <p class="product-card__description">${summary}</p>
+            </div>
+          </a>
           <div class="product-card__actions">
             <button
               type="button"
@@ -59,7 +61,7 @@ export class ProductItem extends Component {
                 : ""
             }
           </div>
-        </a>
+        </article>
       </li>
     `;
   }
