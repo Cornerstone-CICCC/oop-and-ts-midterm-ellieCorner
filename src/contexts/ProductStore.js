@@ -7,7 +7,10 @@ export class ProductStore {
     this.loading = false;
     this.error = null;
     this.emitter = new Emitter();
-    this.fetched = false;
+    this.pageSize = 8;
+    this.hasMore = true;
+    this.fetchedAll = false;
+    this.pending = null;
   }
   subscribe(fn) {
     return this.emitter.subscribe(fn);
@@ -21,25 +24,80 @@ export class ProductStore {
       categories: [...this.categories],
       loading: this.loading,
       error: this.error,
+      hasMore: this.hasMore,
     };
   }
-  async fetchAll() {
-    if (this.fetched) return;
+  async fetchNext(increment = this.pageSize) {
+    if (increment == null || increment <= 0) return [];
+    if (this.pending) return this.pending;
+    if (!this.hasMore && this.products.length) return [];
+
+    const currentCount = this.products.length;
+    const targetCount = Math.max(currentCount + increment, this.pageSize);
     this.loading = true;
+    this.error = null;
     this.notify();
-    try {
-      const res = await fetch("https://fakestoreapi.com/products");
-      const data = await res.json();
-      this.products = data;
-      this.categories = [...new Set(data.map((p) => p.category))];
-      this.error = null;
-      this.fetched = true;
-    } catch (e) {
-      this.error = e.message || "Fetch error";
-    } finally {
-      this.loading = false;
-      this.notify();
+
+    const requestUrl = `https://fakestoreapi.com/products?limit=${targetCount}`;
+
+    const task = (async () => {
+      try {
+        const res = await fetch(requestUrl);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid response");
+        }
+        this.products = data;
+        this.categories = Array.from(new Set(data.map((p) => p.category)));
+        this.hasMore = data.length >= targetCount;
+        if (!this.hasMore) {
+          this.fetchedAll = true;
+        }
+        this.error = null;
+        return data;
+      } catch (e) {
+        this.error = e.message || "Fetch error";
+        throw e;
+      } finally {
+        this.loading = false;
+        this.pending = null;
+        this.notify();
+      }
+    })();
+
+    this.pending = task;
+    return task;
+  }
+  async ensureMinimum(count) {
+    if (count == null || Number.isNaN(count)) return;
+    let remaining = Math.max(0, count - this.products.length);
+    while (remaining > 0 && this.hasMore) {
+      await this.fetchNext(remaining);
+      remaining = Math.max(0, count - this.products.length);
     }
+  }
+  async fetchAll() {
+    if (this.fetchedAll) return;
+    let safety = 0;
+    while (this.hasMore && safety < 25) {
+      const before = this.products.length;
+      try {
+        await this.fetchNext(this.pageSize);
+      } catch (e) {
+        break;
+      }
+      if (this.products.length === before) {
+        this.hasMore = false;
+        break;
+      }
+      safety += 1;
+    }
+    this.fetchedAll = true;
+    this.hasMore = false;
+    this.notify();
   }
   getById(id) {
     return this.products.find((p) => p.id == id);

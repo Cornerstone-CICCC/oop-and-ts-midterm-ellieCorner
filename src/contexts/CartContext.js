@@ -4,12 +4,19 @@ export class CartContext {
   constructor() {
     this.items = [];
     this.emitter = new Emitter();
+    this.storageKey = "cart-items";
+    this.handleStorage = this.handleStorage.bind(this);
+    this.load();
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", this.handleStorage);
+    }
   }
 
   subscribe(fn) {
     return this.emitter.subscribe(fn);
   }
   notify() {
+    this.persist();
     this.emitter.emit(this.snapshot());
   }
 
@@ -75,5 +82,42 @@ export class CartContext {
   }
   totalPrice() {
     return this.items.reduce((a, c) => a + c.price * c.quantity, 0);
+  }
+
+  load() {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(this.storageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      this.items = parsed
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          price: Number(item.price) || 0,
+          image: item.image,
+          quantity: Number(item.quantity) || 0,
+        }))
+        .filter((item) => item.id != null && item.quantity > 0);
+    } catch (err) {
+      console.warn("[CartContext] Failed to load cart", err);
+      this.items = [];
+    }
+  }
+
+  persist() {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(this.storageKey, JSON.stringify(this.items));
+    } catch (err) {
+      console.warn("[CartContext] Failed to persist cart", err);
+    }
+  }
+
+  handleStorage(event) {
+    if (event.key !== this.storageKey) return;
+    this.load();
+    this.emitter.emit(this.snapshot());
   }
 }
