@@ -1,0 +1,104 @@
+.toast-stack {
+  position: fixed;
+  bottom: var(--space-4);
+  right: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  z-index: 120;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .toast-stack {
+    left: var(--space-3);
+    right: var(--space-3);
+    align-items: stretch;
+  }
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.92);
+  color: var(--color-white);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  transform: translateY(0);
+  animation: toastSlideIn var(--transition);
+  width: min(320px, 82vw);
+}
+
+.toast__body {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.toast__close {
+  margin: 0;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast__close:hover,
+.toast__close:focus-visible {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.toast--success,
+.toast--error,
+.toast--info {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.92);
+  color: var(--color-white);
+}
+
+@media (prefers-color-scheme: dark) {
+  .toast,
+  .toast--success,
+  .toast--error,
+  .toast--info {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.88);
+    color: var(--color-white);
+  }
+
+  .toast__close {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .toast__close:hover,
+  .toast__close:focus-visible {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
